@@ -37,12 +37,12 @@ pipeline {
 
         stage('5. Health Check') {
             steps {
-                echo 'Проверяем доступность сервисов...'
+                echo 'Проверяем доступность сервисов на хосте...'
                 sleep time: 7, unit: 'SECONDS'
 
-                // Запускаем минимальный контейнер curl прямо в сети приложения
-                sh 'docker run --rm --network react-express-pipeline_default curlimages/curl -I http://client:3000'
-                sh 'docker run --rm --network react-express-pipeline_default curlimages/curl -I http://server:5000'
+                // Обращаемся к опубликованным портам прямо через сетевой стек хоста
+                sh 'docker run --rm --network host curlimages/curl -I http://localhost:3000'
+                sh 'docker run --rm --network host curlimages/curl -I http://localhost:5000'
             }
         }
 }
