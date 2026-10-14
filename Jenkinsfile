@@ -45,6 +45,7 @@ pipeline {
                 sh 'curl -I http://server:5000'
             }
         }
+}
 
     post {
         success {
