@@ -15,44 +15,44 @@ pipeline {
 
         stage('2. Build Containers') {
             steps {
-                echo 'Собираем Docker-образы для Client и Server...'
+                echo 'Собираем Docker-образы...'
                 sh 'docker compose build'
             }
         }
 
-        stage('3. Run Tests (Optional)') {
+        stage('3. Deploy Application') {
             steps {
-                echo 'Запускаем автоматические тесты...'
-                // sh 'docker compose run --rm server npm test'
-            }
-        }
-
-        stage('4. Deploy Application') {
-            steps {
-                echo 'Перезапускаем сервисы на стенде...'
+                echo 'Перезапускаем сервисы...'
                 sh 'docker compose down'
                 sh 'docker compose up -d'
             }
         }
 
-        stage('5. Health Check') {
+        stage('4. Health Check') {
             steps {
-                echo 'Проверяем доступность сервисов на хосте...'
-                sleep time: 7, unit: 'SECONDS'
-
-                // Обращаемся к опубликованным портам прямо через сетевой стек хоста
-                sh 'docker run --rm --network host curlimages/curl -I http://localhost:3000'
-                sh 'docker run --rm --network host curlimages/curl -I http://localhost:5000'
+                echo 'Проверяем доступность сервисов...'
+                sleep time: 5, unit: 'SECONDS'
+                
+                sh '''
+                    # Получаем IP-адрес шлюза (хоста Ubuntu) в сети Compose
+                    HOST_IP=$(docker inspect react-express-pipeline-client-1 --format '{{range .NetworkSettings.Networks}}{{.Gateway}}{{end}}')
+                    
+                    echo "Хост найден по IP: $HOST_IP"
+                    
+                    # Делаем запросы через временный контейнер к IP хоста
+                    docker run --rm curlimages/curl --retry 5 --retry-delay 2 --retry-connrefused -I "http://$HOST_IP:3000"
+                    docker run --rm curlimages/curl --retry 5 --retry-delay 2 --retry-connrefused -I "http://$HOST_IP:5000"
+                '''
             }
         }
-}
+    }
 
     post {
         success {
-            echo '✅ Деплой успешно завершен! Приложение доступно на портах 3000 и 5000.'
+            echo '✅ Деплой успешно завершен! Приложение работает.'
         }
         failure {
-            echo '❌ Ошибка при сборке или деплое. Проверьте логи выше.'
+            echo '❌ Ошибка при сборке или деплое.'
         }
     }
 }
