@@ -37,16 +37,14 @@ pipeline {
 
         stage('5. Health Check') {
             steps {
-                echo 'Проверяем доступность сервисов...'
-                // Даем контейнерам время на инициализацию процессов
+                echo 'Проверяем доступность сервисов по именам контейнеров...'
                 sleep time: 7, unit: 'SECONDS'
 
-                // Проверяем доступность через IP Docker-моста хоста (172.17.0.1)
-                sh 'curl -I http://172.17.0.1:3000'
-                sh 'curl -I http://172.17.0.1:5000'
+                // Обращаемся напрямую к сервисам client (3000) и server (5000)
+                sh 'curl -I http://client:3000'
+                sh 'curl -I http://server:5000'
             }
         }
-    }
 
     post {
         success {
