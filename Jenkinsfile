@@ -2,7 +2,6 @@ pipeline {
     agent any
 
     environment {
-        // Указываем название проекта для именования контейнеров
         PROJECT_NAME = 'react-node-app'
     }
 
@@ -24,7 +23,6 @@ pipeline {
         stage('3. Run Tests (Optional)') {
             steps {
                 echo 'Запускаем автоматические тесты...'
-                // Здесь можно добавить команды для прогона тестов, например:
                 // sh 'docker compose run --rm server npm test'
             }
         }
@@ -32,7 +30,6 @@ pipeline {
         stage('4. Deploy Application') {
             steps {
                 echo 'Перезапускаем сервисы на стенде...'
-                // Останавливаем старые контейнеры и запускаем новые в фоновом режиме
                 sh 'docker compose down'
                 sh 'docker compose up -d'
             }
@@ -41,16 +38,19 @@ pipeline {
         stage('5. Health Check') {
             steps {
                 echo 'Проверяем доступность сервисов...'
-                // Проверяем, что сервисы отвечают по HTTP
-                sh 'curl -I http://localhost:3000'
-                sh 'curl -I http://localhost:5000'
+                // Даем контейнерам время на инициализацию процессов
+                sleep time: 7, unit: 'SECONDS'
+
+                // Проверяем доступность через IP Docker-моста хоста (172.17.0.1)
+                sh 'curl -I http://172.17.0.1:3000'
+                sh 'curl -I http://172.17.0.1:5000'
             }
         }
     }
 
     post {
         success {
-            echo '✅ Деплой успешно завершен! Приложение обновлено.'
+            echo '✅ Деплой успешно завершен! Приложение доступно на портах 3000 и 5000.'
         }
         failure {
             echo '❌ Ошибка при сборке или деплое. Проверьте логи выше.'
