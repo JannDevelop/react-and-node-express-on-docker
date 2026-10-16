@@ -32,20 +32,22 @@ pipeline {
             steps {
                 echo 'Проверяем доступность сервисов...'
                 sleep time: 5, unit: 'SECONDS'
-                
                 sh '''
-                    # Получаем IP-адрес шлюза (хоста Ubuntu) в сети Compose
-                    HOST_IP=$(docker inspect react-express-pipeline-client-1 --format '{{range .NetworkSettings.Networks}}{{.Gateway}}{{end}}')
+                    # Динамически получаем имя созданной сети Docker Compose
+                    NETWORK_NAME=$(docker inspect react-express-pipeline-client-1 --format '{{range $k, $v := .NetworkSettings.Networks}}{{$k}}{{end}}')
                     
-                    echo "Хост найден по IP: $HOST_IP"
-                    
-                    # Делаем запросы через временный контейнер к IP хоста
-                    docker run --rm curlimages/curl --retry 5 --retry-delay 2 --retry-connrefused -I "http://$HOST_IP:3000"
-                    docker run --rm curlimages/curl --retry 5 --retry-delay 2 --retry-connrefused -I "http://$HOST_IP:5000"
+                    echo "Используется сеть: ${NETWORK_NAME}"
+
+                    # Проверка клиентской части (React)
+                    docker run --rm --network "${NETWORK_NAME}" curlimages/curl \
+                      --retry 5 --retry-delay 2 --retry-connrefused -I http://client:3000
+
+                    # Проверка серверной части (Express Node.js)
+                    docker run --rm --network "${NETWORK_NAME}" curlimages/curl \
+                      --retry 5 --retry-delay 2 --retry-connrefused -I http://server:5000
                 '''
             }
         }
-    }
 
     post {
         success {
@@ -55,4 +57,3 @@ pipeline {
             echo '❌ Ошибка при сборке или деплое.'
         }
     }
-}
