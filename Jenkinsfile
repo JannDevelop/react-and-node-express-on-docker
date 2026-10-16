@@ -29,18 +29,16 @@ pipeline {
                 echo 'Проверяем доступность сервисов...'
                 sleep time: 5, unit: 'SECONDS'
                 sh '''
-                    # Получаем имя сети
+                    # Получаем имя созданной сети Compose
                     NETWORK_NAME=$(docker inspect react-express-pipeline-client-1 --format '{{range $k, $v := .NetworkSettings.Networks}}{{$k}}{{end}}')
                     
-                    # Извлекаем IP-адрес контейнера клиента напрямую из сети
-                    CLIENT_IP=$(docker inspect react-express-pipeline-client-1 --format '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}')
-                    
-                    echo "Используется сеть: ${NETWORK_NAME}"
-                    echo "IP клиента: ${CLIENT_IP}"
+                    echo "Проверяем сервисы в сети: ${NETWORK_NAME}"
 
-                    # Проверка клиентской части по IP-адресу контейнера
+                    # Проверяем клиент (React) по имени сервиса в Compose
                     docker run --rm --network "${NETWORK_NAME}" curlimages/curl \
-                      --retry 5 --retry-delay 2 --retry-connrefused -I "http://${CLIENT_IP}:3000"
+                      --retry 5 --retry-delay 2 --retry-connrefused -I http://react-express-pipeline-client-1:3000 || \
+                    docker run --rm --network "${NETWORK_NAME}" curlimages/curl \
+                      --retry 5 --retry-delay 2 --retry-connrefused -I http://client:3000
                 '''
             }
         }
