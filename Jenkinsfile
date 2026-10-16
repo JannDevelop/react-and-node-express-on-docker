@@ -1,10 +1,6 @@
 pipeline {
     agent any
 
-    environment {
-        PROJECT_NAME = 'react-node-app'
-    }
-
     stages {
         stage('1. Checkout Code') {
             steps {
@@ -33,21 +29,21 @@ pipeline {
                 echo 'Проверяем доступность сервисов...'
                 sleep time: 5, unit: 'SECONDS'
                 sh '''
-                    # Динамически получаем имя созданной сети Docker Compose
                     NETWORK_NAME=$(docker inspect react-express-pipeline-client-1 --format '{{range $k, $v := .NetworkSettings.Networks}}{{$k}}{{end}}')
                     
                     echo "Используется сеть: ${NETWORK_NAME}"
 
-                    # Проверка клиентской части (React)
+                    # Проверка клиента (React)
                     docker run --rm --network "${NETWORK_NAME}" curlimages/curl \
                       --retry 5 --retry-delay 2 --retry-connrefused -I http://client:3000
 
-                    # Проверка серверной части (Express Node.js)
+                    # Проверка сервера (Express)
                     docker run --rm --network "${NETWORK_NAME}" curlimages/curl \
                       --retry 5 --retry-delay 2 --retry-connrefused -I http://server:5000
                 '''
             }
         }
+    }
 
     post {
         success {
@@ -57,3 +53,4 @@ pipeline {
             echo '❌ Ошибка при сборке или деплое.'
         }
     }
+}
